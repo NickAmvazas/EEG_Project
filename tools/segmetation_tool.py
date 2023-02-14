@@ -1,7 +1,21 @@
+from tqdm import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 from tkinter import Tk, Text, TOP, BOTH, INSERT
+
+""""##############################################################################################################################################################################"""
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def show_description_window(event):
     my_text = ("<Right Click> : Create fragment window" +
@@ -27,8 +41,8 @@ def show_description_window(event):
     text.pack(side=TOP, fill=BOTH, expand=True)
     root.mainloop()
 
+
 def on_right_click(event,fig,ax_list,signals,movements_list,points,windows,label_id,sample_rate,window_lenght) -> None:
-    
     """
     Function to handle right click events.    
     """
@@ -56,13 +70,13 @@ def on_right_click(event,fig,ax_list,signals,movements_list,points,windows,label
             for i in range(len(ax_list)):
                 windows[i].append(ax_list[i].axvspan(span_start, span_end, color=color, alpha=0.4))
             # Print message to console
-            print("Segmentation Added")
+            print("Signal Fragment Added")
             # Update plots
             fig.canvas.draw()
-        else: print("WARNING ---> The window you define is out of the signal borders. Please define a new window.")
-        
+        else: print(f"{bcolors.WARNING} WARNING ---> The window you define is out of the signal borders. Please re-define your window.{bcolors.ENDC}")
+
+
 def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
-    
     """
     Connect the key press event to the function.
     Keyboard buttons description:
@@ -78,9 +92,9 @@ def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
                 window = windows[i].pop()
                 window.remove()
             movements_list[0].pop(), movements_list[1].pop()
-            print("Last Segmentation Erased")
+            print("Last Signal Fragment Erased")
         else:
-            print("Empty")
+            print("Empty - No fragment to delete")
         fig.canvas.draw()
     elif event.key == 'escape' or event.key == 'enter':
         plt.close()
@@ -100,8 +114,8 @@ def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
         label_id.pop()
         label_id.append(4)
          
+
 def create_figure(signals, muse_type, Fs, window_lenght):
-    print(len(signals))
     if(muse_type == "EEG" and len(signals) == 4):
         signal_names = ["F7","F8","TP9","TP10"]
         # Create a figure and axes
@@ -174,25 +188,73 @@ def create_figure(signals, muse_type, Fs, window_lenght):
     figManager.window.showMaximized()
     # Show the plot
     plt.show()
+    
     # Return movements list
     return movements_list[0], movements_list[1] 
 
 
-def signal_Segmentation(dataframe:pd, Fs=128, window_lenght = 4):
+def create_dataframe(dataframe,muse_mode, movement_marker_list, movement_label_list, fs, window_lenght):
+    if(muse_mode=="EEG"): columns = ['Sample_Counter','EEG.F7','EEG.F8','EEG.TP9','EEG.TP10','Label']
+    elif(muse_mode=="Gyroscope"): columns = ['Sample_Counter','X','Y','Z','Label']
+    df = pd.DataFrame(columns = columns)
+    row = 0
+    for i in range(len(movement_marker_list)):
+        left_window_border = movement_marker_list[i] - ((fs * (window_lenght/2)) - 1)
+        signal_window = [left_window_border]
+        for j in range((fs * window_lenght) - 1):
+            left_window_border = left_window_border + 1
+            signal_window.append(left_window_border)
+        data_window = dataframe.take(signal_window)
+
+        for sample in range(len(data_window)): # len(data_window) = 512 samples
+            if(muse_mode=="EEG"):
+                info = [sample, data_window.iloc[sample][0], data_window.iloc[sample][1],data_window.iloc[sample][2],data_window.iloc[sample][3], movement_label_list[i]]
+            elif(muse_mode=="Gyroscope"):
+                 info = [sample, data_window.iloc[sample][0], data_window.iloc[sample][1],data_window.iloc[sample][2], movement_label_list[i]]
+            df.loc[row] = info
+            row += 1
+    return df
+
+""""##############################################################################################################################################################################"""
+
+def signal_Segmentation(signal_df:pd, Fs=128, window_lenght = 4):
 
     """
-    Documant MUSE_2 Signal Segmentation
+    Description
+    ----------
+    A tool that splits the given signal dataframe into labeled fragments based on markers you set.
+
+    Parameters
+    ----------
+    signal_df : pandas.DataFrame
+        The signal dataframe must containing exactly 
+            4 columns: EEG signals or 
+            3 columns: Gyroscope signals
+    *Fs : int
+        Sample rate (128 Hz by default).
+    *window_lenght : int
+        The length of each window in seconds (4 sec by default)
+
+    Returns
+    -------
+    pandas.DataFrame
+        A dataFrame which contains each window/fragment and its label.
+        
+    Notes
+    -----
+    - Depending on the dataframe structure that is imported the mode can be: EEG (4 signals) or Gyroscope(3 signals).
+
     """
-    signals = dataframe.transpose().values
-    if (len(signals)==4): muse_mode = "EEG"
+    signals = signal_df.transpose().values
+    if (len(signals)==4): muse_mode = "EEG"   
     elif (len(signals)==3) : muse_mode = "Gyroscope"
     else:
         empty_df = pd.DataFrame() 
         print("WARNING ---> The dataframe structure being imported is incorrect.\n" +
                 "The dataframe must have:\n" +
-                "Exactly 4 signals (F7,F8,TP9,TP10) in EEG mode or\n Exactly 3 signals (X,Y,Z) in Gyroscope mode.")
+                "Exactly 4 columns/signals (F7,F8,TP9,TP10) in EEG mode or\n Exactly 3 columns/signals (X,Y,Z) in Gyroscope mode.")
         return empty_df
-
+    print("Segmentation tool Mode: " + f"{bcolors.OKGREEN}"  + muse_mode + f"{bcolors.ENDC}")
 
     labels_list, window_markers_list = create_figure(signals, muse_mode, Fs, window_lenght)
     if (labels_list and window_markers_list):
@@ -203,22 +265,4 @@ def signal_Segmentation(dataframe:pd, Fs=128, window_lenght = 4):
         # Unpack the sorted list of tuples back into two separate lists
         labels_list, window_markers_list = zip(*zipped_lists)
 
-    print(labels_list)
-    print(window_markers_list) 
-
-
-
-"""""
-#Main only for testing purposes
-def main():
-    try:
-        dataframe = pd.read_csv("trial1_15.12.19_21.19.34.csv",
-                                header = 1,usecols = ['EEG.F7','EEG.F8','EEG.TP9']) 
-        dataframe = dataframe.loc[:, ['EEG.F7','EEG.F8','EEG.TP9']]
-    except ValueError:
-            print("Oops! There was a problem with file: ")
-    signal_Segmentation(dataframe)
-
-if __name__ == "__main__":
-    main()
-"""""
+    return create_dataframe(signal_df,muse_mode, window_markers_list, labels_list,Fs,window_lenght)

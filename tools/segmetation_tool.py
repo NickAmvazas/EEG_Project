@@ -32,11 +32,11 @@ def show_description_window(event):
     text.tag_configure("blue", foreground="blue")
     text.tag_configure("orange", foreground="orange")
     text.insert(INSERT, my_text,"black")
-    text.insert(INSERT, "• <0> : Ιnactivity (default)\n", "darkgrey")
-    text.insert(INSERT, "• <1> : Left Movement\n", "red")
-    text.insert(INSERT, "• <2> : Right Movement\n", "green")
-    text.insert(INSERT, "• <3> : Up Movement\n", "blue")
-    text.insert(INSERT, "• <4> : Down Movement\n", "orange")
+    text.insert(INSERT, "• <0> : Label 0: Ιnactivity (default)\n", "darkgrey")
+    text.insert(INSERT, "• <1> : Label 1\n", "red")
+    text.insert(INSERT, "• <2> : Label 2\n", "green")
+    text.insert(INSERT, "• <3> : Label 3\n", "blue")
+    text.insert(INSERT, "• <4> : Label 4\n", "orange")
     text.config(state="disabled")
     text.pack(side=TOP, fill=BOTH, expand=True)
     root.mainloop()
@@ -70,10 +70,10 @@ def on_right_click(event,fig,ax_list,signals,movements_list,points,windows,label
             for i in range(len(ax_list)):
                 windows[i].append(ax_list[i].axvspan(span_start, span_end, color=color, alpha=0.4))
             # Print message to console
-            print("Signal Fragment Added")
+            print("\tSignal Fragment Added")
             # Update plots
             fig.canvas.draw()
-        else: print(f"{bcolors.WARNING} WARNING ---> The window you define is out of the signal borders. Please re-define your window.{bcolors.ENDC}")
+        else: print(f"\t{bcolors.WARNING}WARNING ---> The window you define is out of the signal borders. Please re-define your window.{bcolors.ENDC}")
 
 
 def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
@@ -92,9 +92,9 @@ def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
                 window = windows[i].pop()
                 window.remove()
             movements_list[0].pop(), movements_list[1].pop()
-            print("Last Signal Fragment Erased")
+            print("\tLast Signal Fragment Erased")
         else:
-            print("Empty - No fragment to delete")
+            print("\tEmpty - No fragment to delete")
         fig.canvas.draw()
     elif event.key == 'escape' or event.key == 'enter':
         plt.close()
@@ -113,7 +113,7 @@ def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
     elif event.key == '4':
         label_id.pop()
         label_id.append(4)
-         
+
 
 def create_figure(signals, muse_type, Fs, window_lenght):
     if(muse_type == "EEG" and len(signals) == 4):
@@ -163,7 +163,7 @@ def create_figure(signals, muse_type, Fs, window_lenght):
         points = [ax1_points, ax2_points, ax3_points]
         windows = [ax1_windows, ax2_windows, ax3_windows]
     else:
-        print("ERROR")
+        print("\tERROR")
         return [-1],[-1]
     
     # Init movements list
@@ -245,16 +245,17 @@ def signal_Segmentation(signal_df:pd, Fs=128, window_lenght = 4):
     - Depending on the dataframe structure that is imported the mode can be: EEG (4 signals) or Gyroscope(3 signals).
 
     """
+    print(f"{bcolors.OKBLUE}Segmentation Tool Started.{bcolors.ENDC}")
     signals = signal_df.transpose().values
     if (len(signals)==4): muse_mode = "EEG"   
     elif (len(signals)==3) : muse_mode = "Gyroscope"
     else:
         empty_df = pd.DataFrame() 
-        print("WARNING ---> The dataframe structure being imported is incorrect.\n" +
-                "The dataframe must have:\n" +
-                "Exactly 4 columns/signals (F7,F8,TP9,TP10) in EEG mode or\n Exactly 3 columns/signals (X,Y,Z) in Gyroscope mode.")
+        print("\tWARNING ---> The dataframe structure being imported is incorrect.\n\t" +
+                "The dataframe must have:\n\t" +
+                "Exactly 4 columns/signals (F7,F8,TP9,TP10) in EEG mode or\n\t Exactly 3 columns/signals (X,Y,Z) in Gyroscope mode.")
         return empty_df
-    print("Segmentation tool Mode: " + f"{bcolors.OKGREEN}"  + muse_mode + f"{bcolors.ENDC}")
+    print("\tSegmentation tool Mode: " + f"{bcolors.OKGREEN}"  + muse_mode + f"{bcolors.ENDC}")
 
     labels_list, window_markers_list = create_figure(signals, muse_mode, Fs, window_lenght)
     if (labels_list and window_markers_list):
@@ -265,4 +266,5 @@ def signal_Segmentation(signal_df:pd, Fs=128, window_lenght = 4):
         # Unpack the sorted list of tuples back into two separate lists
         labels_list, window_markers_list = zip(*zipped_lists)
 
+    print(f"{bcolors.OKBLUE}Segmentation Tool Terminated ---> {bcolors.OKCYAN}" + str(len(window_markers_list)) + f" signal fragment/s created. {bcolors.ENDC}")
     return create_dataframe(signal_df,muse_mode, window_markers_list, labels_list,Fs,window_lenght)

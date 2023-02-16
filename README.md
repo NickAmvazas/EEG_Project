@@ -6,4 +6,4 @@
 - pip install mne
 
 ## Pre-processing Data script:
-![alt text](https://github.com/NickAmvazas/EEG_Project/Images/preprocessing.png?raw=true)
+![My Image](Images/preprocessing.png)

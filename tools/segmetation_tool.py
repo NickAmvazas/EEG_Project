@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -31,12 +30,20 @@ def show_description_window(event):
     text.tag_configure("green", foreground="green")
     text.tag_configure("blue", foreground="blue")
     text.tag_configure("orange", foreground="orange")
+    text.tag_configure("teal", foreground="teal")
+    text.tag_configure("cyan", foreground="cyan")
+    text.tag_configure("purple", foreground="purple")
+    text.tag_configure("magenta", foreground="magenta")
     text.insert(INSERT, my_text,"black")
     text.insert(INSERT, "• <0> : Label 0: Ιnactivity (default)\n", "darkgrey")
     text.insert(INSERT, "• <1> : Label 1\n", "red")
     text.insert(INSERT, "• <2> : Label 2\n", "green")
     text.insert(INSERT, "• <3> : Label 3\n", "blue")
     text.insert(INSERT, "• <4> : Label 4\n", "orange")
+    text.insert(INSERT, "• <5> : Label 5\n", "teal")
+    text.insert(INSERT, "• <6> : Label 6\n", "cyan")
+    text.insert(INSERT, "• <7> : Label 7\n", "purple")
+    text.insert(INSERT, "• <8> : Label 8\n", "magenta")
     text.config(state="disabled")
     text.pack(side=TOP, fill=BOTH, expand=True)
     root.mainloop()
@@ -52,6 +59,10 @@ def on_right_click(event,fig,ax_list,signals,movements_list,points,windows,label
     elif label_id[0] == 2 : color = "green"
     elif label_id[0] == 3 : color = "blue"
     elif label_id[0] == 4 : color = "orange"
+    elif label_id[0] == 5 : color = "teal"
+    elif label_id[0] == 6 : color = "cyan"
+    elif label_id[0] == 7 : color = "purple"
+    elif label_id[0] == 8 : color = "magenta"
     # Check if the event was a right click
     if event.button == 3:
         # Get the x-axis position of the right click
@@ -113,9 +124,24 @@ def on_key_press(event,fig,movements_list,points,windows,label_id) -> None:
     elif event.key == '4':
         label_id.pop()
         label_id.append(4)
-
-
+    elif event.key == '5':
+        label_id.pop()
+        label_id.append(5)
+    elif event.key == '6':
+        label_id.pop()
+        label_id.append(6)
+    elif event.key == '7':
+        label_id.pop()
+        label_id.append(7)
+    elif event.key == '8':
+        label_id.pop()
+        label_id.append(8)
+    
+#sdfsdf
 def create_figure(signals, muse_type, Fs, window_lenght):
+    # Set the style to use a gray background and gridlines
+    plt.style.use('default')
+
     if(muse_type == "EEG" and len(signals) == 4):
         signal_names = ["F7","F8","TP9","TP10"]
         # Create a figure and axes
@@ -183,9 +209,11 @@ def create_figure(signals, muse_type, Fs, window_lenght):
     # Connect the right click event to the function
     fig.canvas.mpl_connect("button_press_event", lambda event: on_right_click(event,fig,axs,signals,movements_list,points,windows,label_id, Fs, window_lenght))
 
-    # Maximize fig window
-    figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    # Maximize fig window  -- figManager create problems in Compile --
+    #figManager = plt.get_current_fig_manager()
+    #figManager.window.showMaximized()
+    
+
     # Show the plot
     plt.show()
     
@@ -210,7 +238,7 @@ def create_dataframe(dataframe,muse_mode, movement_marker_list, movement_label_l
             if(muse_mode=="EEG"):
                 info = [sample, data_window.iloc[sample][0], data_window.iloc[sample][1],data_window.iloc[sample][2],data_window.iloc[sample][3], movement_label_list[i]]
             elif(muse_mode=="Gyroscope"):
-                 info = [sample, data_window.iloc[sample][0], data_window.iloc[sample][1],data_window.iloc[sample][2], movement_label_list[i]]
+                info = [sample, data_window.iloc[sample][0], data_window.iloc[sample][1],data_window.iloc[sample][2], movement_label_list[i]]
             df.loc[row] = info
             row += 1
     return df
